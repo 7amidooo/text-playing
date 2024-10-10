@@ -2,22 +2,29 @@ import streamlit as st
 from transformers import pipeline
 import torch
 import gc
+
 # Caching models to optimize performance
 @st.cache_resource
 def load_summarization_model():
     return pipeline("summarization", model="facebook/bart-large-cnn", trust_remote_code=True)
+
 @st.cache_resource
 def load_translation_model(lang_code):
     return pipeline("translation", model=f"Helsinki-NLP/opus-mt-en-{lang_code}", trust_remote_code=True)
+
 @st.cache_resource
 def load_text_generation_model():
     return pipeline("text-generation", model="gpt2", trust_remote_code=True)
+
 @st.cache_resource
 def load_ner_model():
     return pipeline("ner", grouped_entities=True, trust_remote_code=True)
+
 @st.cache_resource
 def load_qa_model():
     return pipeline("question-answering", trust_remote_code=True)
+
+
 # Task-specific functions
 def perform_text_summarization():
     user_input = st.text_area("Enter the text you want to summarize:")
@@ -27,6 +34,8 @@ def perform_text_summarization():
             summarizer = load_summarization_model()
             summary = summarizer(user_input, max_length=max_length, min_length=30, do_sample=False)
             st.write(f"Summary: {summary[0]['summary_text']}")
+
+
 def perform_translation():
     user_input = st.text_area("Enter the text you want to translate:")
     target_language = st.selectbox("Select the target language", ["French", "Spanish", "German", "Arabic"])
@@ -37,6 +46,8 @@ def perform_translation():
             translator = load_translation_model(lang_codes[target_language])
             translation = translator(user_input)
             st.write(f"Translation: {translation[0]['translation_text']}")
+
+
 def perform_text_generation():
     user_input = st.text_area("Enter the beginning of your text:")
     max_length = st.slider("Max Length of Generated Text:", min_value=50, max_value=200, value=100)
@@ -46,6 +57,8 @@ def perform_text_generation():
             text_generator = load_text_generation_model()
             generated_text = text_generator(user_input, max_length=max_length, num_return_sequences=1)
             st.write(f"Generated Text: {generated_text[0]['generated_text']}")
+
+
 def perform_ner():
     user_input = st.text_area("Enter text to extract named entities:")
     
@@ -56,6 +69,8 @@ def perform_ner():
             st.write("Named Entities:")
             for entity in entities:
                 st.write(f"{entity['word']} ({entity['entity_group']}) - Confidence: {entity['score']:.2f}")
+
+
 def perform_question_answering():
     st.write("Upload a text document (plain text only) or enter a paragraph for question answering.")
     uploaded_file = st.file_uploader("Upload a text file", type=["txt"])
@@ -75,6 +90,8 @@ def perform_question_answering():
                 qa_pipeline = load_qa_model()
                 answer = qa_pipeline(question=question, context=document)
                 st.write(f"Answer: {answer['answer']}")
+
+
 # Main app logic
 st.title("Text Toolkit AI")
 st.sidebar.title("Choose a task:")
@@ -86,6 +103,7 @@ task = st.sidebar.selectbox(
      "Named Entity Recognition", 
      "Question Answering")
 )
+
 # Execute the selected task
 if task == "Text Summarization":
     perform_text_summarization()
@@ -97,5 +115,6 @@ elif task == "Named Entity Recognition":
     perform_ner()
 elif task == "Question Answering":
     perform_question_answering()
+
 # Call garbage collection at the end to free up memory
 gc.collect()
